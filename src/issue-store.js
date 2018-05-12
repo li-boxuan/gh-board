@@ -30,7 +30,7 @@ const cardFactory = (repoOwner, repoName, number, issue, pr=null, prStatuses=nul
   const key = toIssueKey(repoOwner, repoName, number);
   let card = CARD_CACHE[key];
   if (card && issue) {
-    card.resetPromisesAndState(issue, pr, prStatuses);
+    card.resetPromisesAndState(issue, pr, prStatuses); // 关键就在这行，会更新card的issue
     return card;
   } else if (card) {
     return card;
@@ -120,6 +120,7 @@ const issueStore = new class IssueStore extends EventEmitter {
         delete this.polling;
         if (isPollingEnabled) {
           this.fetchIssues(); // start Polling again
+          this.fetchReviews();
         }
       }
     });
@@ -168,6 +169,16 @@ const issueStore = new class IssueStore extends EventEmitter {
     }
     return Client.dbPromise().then(() => this._fetchAllIssues(repoInfos, progress).then((cards) => {
       return filterCardsByFilter(cards);
+    }));
+  }
+  async fetchReviews(progress) {
+    const {repoInfos} = getFilters().getState();
+    if (!progress) {
+      // If no progress is passed in then just use a dummy progress
+      progress = new Progress();
+    }
+    return Client.dbPromise().then(() => this._fetchAllReviews(repoInfos, progress).then((reviewCards) => {
+      return filterCardsByFilter(reviewCards);
     }));
   }
   _fetchAllIssuesForRepo(repoOwner, repoName, progress) {
@@ -480,6 +491,67 @@ const issueStore = new class IssueStore extends EventEmitter {
       });
 
     });
+  }
+  _fetchAllReviews(repoInfos, progress, isForced) {
+    // Start/keep polling
+    if (!this.polling && isPollingEnabled) {
+      this.polling = setTimeout(() => {
+        this.polling = null;
+        this._fetchAllReviews(repoInfos, progress, true /*isForced*/);
+      }, getReloadTime());
+    }
+    // TODO: what do cacheCards do?
+    //if (!isForced && cacheCards && cacheCardsRepoInfos === JSON.stringify(repoInfos)) {
+    //  return Promise.resolve(cacheCards);
+    //}
+    const explicitlyListedRepos = {};
+    repoInfos.forEach(({repoOwner, repoName}) => {
+      if (repoName !== '*') {
+        explicitlyListedRepos[`${repoOwner}/${repoName}`] = true;
+      }
+    });
+
+    const allPromises = _.map(repoInfos, ({repoOwner, repoName}) => {
+      if (repoName === '*') {
+        // 这段先不管，大概就是fetch所有repos，然后concat
+        // 回头参考_fetchAllIssues即可（最后把这段剥离出来）
+      } else {
+        return Client.getOcto().repos(repoOwner, repoName).fetch()
+        .then((repo) => {
+          return this._fetchUpdatesForRepo(repo, progress);
+        });
+      }
+    });
+    return Promise.all(allPromises).then((repoAndCards) => {
+      repoAndCards = _.flatten(repoAndCards, true /*shallow*/); // the asterisks in the URL become an array of repoAndCards so we need to flatten
+      const repos = _.filter(repoAndCards.map(({repository}) => { return repository; }), (v) => { return !!v; }); // if the lastSeenAt did not change then repository field will be missing
+      const cards = _.flatten(repoAndCards.map(({cards}) => { return cards; }), true /*shallow*/);
+      // didLabelsChange is true if at least one of the repos labels changed
+      const didLabelsChange = _.flatten(repoAndCards.map(({didLabelsChange}) => { return didLabelsChange; }), true /*shallow*/).indexOf(true) >= 0;
+
+      _buildBipartiteGraph(GRAPH_CACHE, cards);
+
+      cacheCards = cards;
+      cacheCardsRepoInfos = JSON.stringify(repoInfos);
+
+      // Save the cards and then emit that they were changed
+      let putCardsAndRepos;
+      if (Client.canCacheLots()) {
+        putCardsAndRepos = Database.putCardsAndRepos(cards, repos);
+      } else {
+        // when not logged in then do not bother saving the last-updated time for each repo
+        // since we have only been asking for 1 page of results.
+        putCardsAndRepos = Database.putCards(cards);
+      }
+      return putCardsAndRepos.then(() => {
+        if (cards.length || didLabelsChange) {
+          this.emit('change');
+        }
+        return cards;
+      });
+
+    });
+
   }
   loadCardsFromDatabase(filter) {
     return Database.fetchCards(filter).then((cards) => {

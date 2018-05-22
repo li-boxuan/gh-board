@@ -20,9 +20,12 @@ import FetchAllPlugin from 'octokat/dist/node/plugins/fetch-all';
 import PaginationPlugin from 'octokat/dist/node/plugins/pagination';
 import toQueryString from 'octokat/dist/node/helpers/querystring';
 
+import GraphQLClient from 'github-graphql';
+
 const MAX_CACHED_URLS = 2000;
 
 let cachedClient = null;
+let graphQLClient = null;
 
 // Try to load/save to IndexedDB and fall back to localStorage for persisting the cache.
 // localStorage support is needed because IndexedDB is disabled for Private browsing in Safari/Firefox
@@ -193,7 +196,7 @@ class Client extends EventEmitter {
   }
   getOcto() {
     if (!cachedClient) {
-      let credentials = this.getCredentials();
+      let credentials = this.getCredentials;
       cachedClient = new Octo(credentials);
       // update the rateLimit for issue-store so it can gracefully back off
       // making requests when the rate limit is low
@@ -202,6 +205,13 @@ class Client extends EventEmitter {
       });
     }
     return cachedClient;
+  }
+  getGraphQLClient() {
+    if (!graphQLClient) {
+      let token = this.getCredentials.token;
+      graphQLClient = new GraphQLClient(token);
+    }
+    return graphQLClient;
   }
   getAnonymousOcto() {
     return new Octo();

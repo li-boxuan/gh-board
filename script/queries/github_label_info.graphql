@@ -1,4 +1,10 @@
 query($owner: String!, $name: String!) {
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+  }
   repository(owner:$owner, name:$name) {
     labels(first:100){
       nodes {

@@ -101,7 +101,8 @@ function ReviewCard(props) {
       <BS.OverlayTrigger
         delayShow={2000}
         container={this}
-        trigger={['hover', 'focus']}
+        trigger='click'
+        rootClose
         placement='bottom'
         overlay={bodyPopover}>
         {children}

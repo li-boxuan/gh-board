@@ -19,6 +19,7 @@ import Time from './time';
 import {Timer} from './time'; // used for polling PR status
 import LabelBadge from './label-badge';
 import IssueOrPullRequestBlurb from './issue-blurb';
+import Reactions from './reactions';
 
 function DiffHtml(props) {
   const {path, diffHunk} = props;
@@ -33,7 +34,7 @@ function DiffHtml(props) {
 
 function ReviewCard(props) {
   const {card, primaryRepoName, columnRegExp, onDragStart} = props;
-  const {repoOwner, repoName, number, id, bodyText, path, diffHunk, url} = card;
+  const {repoOwner, repoName, number, id, bodyText, path, diffHunk, url, reactions} = card;
 
   const key = `${repoOwner}/${repoName}#${number}-${id}`;
 
@@ -107,6 +108,18 @@ function ReviewCard(props) {
     );
   }
 
+  let reactionsStat = {
+    THUMBS_UP: 0,
+    THUMBS_DOWN: 0,
+    LAUGH: 0,
+    HOORAY: 0,
+    HEART: 0,
+    CONFUSED: 0
+  };
+  if (reactions) {
+    reactions.forEach(reaction => reactionsStat[reaction.content]++);
+  }
+
   return (
     <div className='-card-and-related'>
       <BS.ListGroupItem
@@ -132,7 +145,9 @@ function ReviewCard(props) {
         </TitleLink>
 
         <span key='footer' className='issue-footer'>
-          <span key='left-footer' className='comment-reactions'> 👍 2 👎 😄 3 🎉 1 😕 ❤️ </span>
+          <span key='left-footer' className='comment-reactions'>
+            <Reactions stat={reactionsStat}/>
+          </span>
           <span key='right-footer' className='issue-time-and-user'>
             <Time key='time' className='updated-at' dateTime={updatedAt}/>
             {assignedAvatar}

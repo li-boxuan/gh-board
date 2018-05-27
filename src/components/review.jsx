@@ -18,6 +18,7 @@ import GithubFlavoredMarkdown from './gfm';
 import Time from './time';
 import {Timer} from './time'; // used for polling PR status
 import LabelBadge from './label-badge';
+import ReviewBlurb from './review-blurb';
 import IssueOrPullRequestBlurb from './issue-blurb';
 import Reactions from './reactions';
 
@@ -82,7 +83,7 @@ function ReviewCard(props) {
   };
 
   const header = [
-    <IssueOrPullRequestBlurb key='issue-blurb'
+    <ReviewBlurb key='review-blurb'
       card={card}
       primaryRepoName={primaryRepoName} />,
   ];

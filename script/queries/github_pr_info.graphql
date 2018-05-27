@@ -20,6 +20,7 @@ query($owner: String!, $name: String!, $before: String) {
                 id
                 url
                 bodyText
+                path
                 diffHunk
                 createdAt
                 lastEditedAt

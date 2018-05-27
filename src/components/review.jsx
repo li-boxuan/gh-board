@@ -6,6 +6,7 @@ import { DragSource } from 'react-dnd';
 import classnames from 'classnames';
 import {Link} from 'react-router';
 import {CalendarIcon, ChecklistIcon, MilestoneIcon, CommentIcon, AlertIcon, PencilIcon, CheckIcon, PrimitiveDotIcon, XIcon} from 'react-octicons';
+import {Diff2Html} from 'diff2html';
 
 import {getFilters} from '../route-utils';
 import IssueStore from '../issue-store';
@@ -19,9 +20,20 @@ import {Timer} from './time'; // used for polling PR status
 import LabelBadge from './label-badge';
 import IssueOrPullRequestBlurb from './issue-blurb';
 
+function DiffHtml(props) {
+  const {path, diffHunk} = props;
+  const inputDiff = '--- a/' + path + '\n+++ b/' + path + '\n' + diffHunk;
+  const outputHtml = Diff2Html.getPrettyHtml(
+    inputDiff, {inputFormat: 'diff'}
+  );
+  return (
+    <div dangerouslySetInnerHTML={{__html: outputHtml}} />
+  );
+}
+
 function ReviewCard(props) {
   const {card, primaryRepoName, columnRegExp, onDragStart} = props;
-  const {repoOwner, repoName, number, id, bodyText, diffHunk, url} = card;
+  const {repoOwner, repoName, number, id, bodyText, path, diffHunk, url} = card;
 
   const key = `${repoOwner}/${repoName}#${number}-${id}`;
 
@@ -76,12 +88,10 @@ function ReviewCard(props) {
 
   const bodyPopover = (
     <BS.Popover className='popover-issue-body' id={`popover-${key}-body`} title='diff hunk'>
-      <GithubFlavoredMarkdown
-        repoOwner={repoOwner}
-        repoName={repoName}
-        text={diffHunk}/>
+      <DiffHtml path={path} diffHunk={diffHunk}/>
     </BS.Popover>
   );
+
 
   function TitleLink(props) {
     const {children} = props;

@@ -131,17 +131,11 @@ function ReviewCard(props) {
 
         <TitleLink>
           <span className='-extra-span-for-inline-popover'>
-            <a
-              key='link'
-              className='issue-title'
-              target='_blank'
-              href={url}>
-                <GithubFlavoredMarkdown
-                  inline
-                  repoOwner={repoOwner}
-                  repoName={repoName}
-                  text={bodyText}/>
-            </a>
+              <GithubFlavoredMarkdown
+                inline
+                repoOwner={repoOwner}
+                repoName={repoName}
+                text={bodyText}/>
           </span>
         </TitleLink>
 

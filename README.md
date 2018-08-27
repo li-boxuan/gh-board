@@ -16,11 +16,12 @@ Why waste time and money paying for a Ticket Tracker when you already work in Gi
   - [Moving Cards](#moving-cards)
   - [Task Lists](#task-lists)
   - [CI Status and Merge Conflict](#ci-status-and-merge-conflict)
+  - [Burnup Chart](#burnup-chart)
   - [Issue Images](#issue-images)
   - [Pull Request to non-default branch](#pull-request-to-non-default-branch)
   - [Batch-Edit Labels in Multiple Repositories](#batch-edit-labels-in-multiple-repositories)
-  - [Burnup Chart](#burnup-chart)
-  - [Easter Eggs](#easter-eggs)
+  - [Review Filtering](#review-filtering)
+  - [Add and Remove Reactions](#add-and-remove-reactions)
 - [Examples](#examples)
 - [Development](#development)
   - [How Does it Work?](#how-does-it-work)
@@ -113,7 +114,7 @@ It also skips when nothing was opened or closed that day/month/year (useful to s
 ![burnup-chart](https://cloud.githubusercontent.com/assets/253202/14406693/5e05c870-fe7d-11e5-9564-ecddb08ebe0d.png)
 
 
-# Issue Image
+### Issue Images
 
 If an Issue or Pull Request contains an image then it will be shown in the Issue
 
@@ -131,13 +132,17 @@ If you need to rename a column or remove a duplicate label you can get to this p
 
 ![image](https://cloud.githubusercontent.com/assets/253202/14569597/b3388eba-030d-11e6-9b6e-ea03df2f2327.png)
 
+### Review Filtering
 
-# Easter Eggs
+Reviews can be filtered by pull request author, review author and meta-review author.
 
-Plus, it comes with totally useful easter eggs you can unlock!
+![image](https://user-images.githubusercontent.com/25746010/43847770-0647a8c0-9b64-11e8-8f1b-780a1ae50cbc.gif)
 
-![easter-eggs](https://cloud.githubusercontent.com/assets/253202/14037438/185532ee-f21a-11e5-8b83-20f8cd21b753.gif)
+### Add and Remove Reactions
 
+You can add or remove your own reactions directly on gh-board.
+
+![image](https://user-images.githubusercontent.com/25746010/43847257-c227810c-9b62-11e8-9e5e-0a799ee0d512.gif)
 
 # Examples
 

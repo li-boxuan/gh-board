@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e -x
+
 npm run build
-$(npm bin)/http-server . &
-node ./script/fetch-issues.js
+NODE_ENV=development npx babel-node script/fetch-issues.js

@@ -1,4 +1,4 @@
-import React from 'react';
+import {Component} from 'react';
 import _ from 'underscore';
 import {Link} from 'react-router';
 import {ListUnorderedIcon} from 'react-octicons';
@@ -13,71 +13,111 @@ import FilterStore from '../filter-store';
 import CurrentUserStore from '../user-store';
 import Loadable from './loadable';
 import IssueList from './issue-list';
+import ReviewList from './review-list';
 import Issue from './issue';
+import Review from './review';
 import Board from './board';
 import AnonymousModal from './anonymous-modal';
+import withAuth from './login-auth';
 import {titlecaps} from 'titlecaps';
 
 
-const KanbanColumn = React.createClass({
-  render() {
-    const {label, cards, primaryRepo} = this.props;
-    const {columnRegExp} = getFilters().getState();
+function KanbanColumn(props) {
+  const {label, cards, primaryRepo} = props;
+  const {columnRegExp} = getFilters().getState();
 
-    const issueComponents = _.map(cards, (card) => {
-      return (
-        <Issue
-          key={card.issue.id}
-          primaryRepoName={primaryRepo.repoName}
-          card={card}
-          columnRegExp={columnRegExp}
-          />
-      );
-    });
-
-    let icon;
-    let name;
-    if (columnRegExp.test(label.name)) {
-      icon = (<ListUnorderedIcon/>);
-      name = label.name.replace(/^\d+\ -\ /, ' ');
-    } else {
-      icon = null;
-      name = label.name;
-    }
-    const title = (
-      <Link className='label-title' to={getFilters().toggleColumnLabel(label.name).url()}>
-        {titlecaps(name)}
-      </Link>
+  const issueComponents = _.map(cards, (card) => {
+    return (
+      <Issue
+        key={card.issue.id}
+        primaryRepoName={primaryRepo.repoName}
+        card={card}
+        columnRegExp={columnRegExp}
+        />
     );
+  });
 
-    if (issueComponents.length || SettingsStore.getShowEmptyColumns()) {
-      return (
-        <div key={label.name} className='kanban-board-column'>
-          <IssueList
-            icon={icon}
-            title={title}
-            backgroundColor={label.color}
-            label={label}
-            primaryRepo={primaryRepo}
-          >
-            {issueComponents}
-          </IssueList>
-        </div>
-      );
-    } else {
-      return null; // TODO: Maybe the panel should say "No Issues" (but only if it's the only column)
-    }
+  let icon;
+  let name;
+  if (columnRegExp.test(label.name)) {
+    icon = (<ListUnorderedIcon/>);
+    name = label.name.replace(/^\d+\ -\ /, ' ');
+  } else {
+    icon = null;
+    name = label.name;
   }
-});
+  const title = (
+    <Link className='label-title' to={getFilters().toggleColumnLabel(label.name).url()}>
+      {titlecaps(name)}
+    </Link>
+  );
 
-const KanbanRepo = React.createClass({
+  if (issueComponents.length || SettingsStore.getShowEmptyColumns()) {
+    return (
+      <div key={label.name} className='kanban-board-column'>
+        <IssueList
+          icon={icon}
+          title={title}
+          backgroundColor={label.color}
+          label={label}
+          primaryRepo={primaryRepo}
+        >
+          {issueComponents}
+        </IssueList>
+      </div>
+    );
+  } else {
+    return null;
+  }
+}
+
+function ReviewColumn(props) {
+  const {reviews} = props;
+
+  const reviewComponents = _.map(reviews, (review) => {
+    return (
+      <Review
+        review={review}
+      />
+    );
+  });
+
+  return (
+    <div className='kanban-board-column'>
+      <ReviewList>
+        {reviewComponents}
+      </ReviewList>
+    </div>
+  );
+}
+
+class KanbanRepo extends Component {
   componentDidMount() {
     const repoTitle = titlecaps(this.props.repoInfos[0].repoName);
     document.title = `${repoTitle} Kanban Board`;
-  },
+  }
 
   render() {
-    const {columnData, cards, repoInfos} = this.props;
+    const {columnData, cards, repoInfos, loginInfo} = this.props;
+
+    // Get review comments out of cards
+    const reviews = _.flatten(cards.map((card) => {
+      if (card.issue.pullRequest && card.issue.pullRequest.comments) {
+        let comments = card.issue.pullRequest.comments;
+        return comments.map(comment => {
+          comment.repoOwner = card.repoOwner;
+          comment.repoName = card.repoName;
+          comment.number = card.number;
+          comment.prAuthor = card.issue.user ? card.issue.user.login : null;
+          return comment;
+        });
+      } else {
+        return [];
+      }
+    }));
+
+    // filter and sort review comments
+    const sortedReviews = FilterStore.filterAndSortReviews(reviews, loginInfo ? loginInfo.login : null);
 
     // Get the primary repoOwner and repoName
     const [primaryRepo] = repoInfos;
@@ -120,22 +160,25 @@ const KanbanRepo = React.createClass({
     return (
       <div className='kanban-board'>
         {kanbanColumns}
+        <ReviewColumn reviews={sortedReviews}/>
         {/* addCardList */}
         <AnonymousModal/>
       </div>
     );
   }
-});
+}
 
-const RepoKanbanShell = React.createClass({
-  componentWillMount() {
+class RepoKanbanShell extends Component {
+  UNSAFE_componentWillMount() {
     // Needs to be called before `render()`
     IssueStore.startPolling();
-  },
+  }
+
   componentWillUnmount() {
     IssueStore.stopPolling();
-  },
-  renderLoaded() {
+  }
+
+  renderLoaded = () => {
     const {repoInfos} = getFilters().getState();
     // Get the "Primary" repo for milestones and labels
     const [{repoOwner, repoName}] = repoInfos;
@@ -146,11 +189,12 @@ const RepoKanbanShell = React.createClass({
     return (
       <Board {...this.props}
         repoInfos={repoInfos}
-        type={KanbanRepo}
+        type={withAuth(KanbanRepo)}
         columnDataPromise={promise}
       />
     );
-  },
+  };
+
   render() {
 
     return (
@@ -160,6 +204,6 @@ const RepoKanbanShell = React.createClass({
       />
     );
   }
-});
+}
 
 export default RepoKanbanShell;
